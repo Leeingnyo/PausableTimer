@@ -1,5 +1,6 @@
 var timeouts = {};
 var intervals = {};
+var map = {};
 mySetTimeout = function (callback, delay = 0, ...args) {
   var id = setTimeout(function (...args) {
     callback(...args);
@@ -14,6 +15,7 @@ mySetTimeout = function (callback, delay = 0, ...args) {
   return id;
 };
 myClearTimeout = function (id) {
+  id = traceId(id);
   clearTimeout(id);
   delete timeouts[id];
 };
@@ -30,9 +32,14 @@ mySetInterval = function (callback, interval = 0, ...args) {
   return id;
 };
 myClearInterval = function (id) {
+  id = traceId(id);
   clearInterval(id);
   delete intervals[id];
 };
+traceId = function (id) {
+  if (map[id]) return traceId(map[id]);
+  return id;
+}
 
 function deactivate() {
   Object.keys(timeouts).forEach(function (id) {
@@ -50,16 +57,19 @@ function activate() {
   Object.keys(timeouts).forEach(function (id) {
     var timeout = timeouts[id];
     var { callback, delay, args } = timeout;
-    mySetTimeout(callback, delay, ...args);
+    var newId = mySetTimeout(callback, delay, ...args);
+    map[id] = newId;
     delete timeouts[id];
   });
   Object.keys(intervals).forEach(function (id) {
     var target = intervals[id];
     var { callback, interval, args, leftTime } = target;
-    setTimeout(function () {
+    var newId = setTimeout(function () {
       callback(...args);
-      mySetInterval(callback, interval, ...args);
+      var realNewId = mySetInterval(callback, interval, ...args);
+      map[newId] = realNewId;
     }, leftTime);
+    map[id] = newId;
     delete intervals[id];
   });
 }
