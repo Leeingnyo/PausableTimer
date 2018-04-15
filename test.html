@@ -1,6 +1,7 @@
 <meta charset="utf-8">
 <script src="./index.js"></script>
 <script>
+var timer = new PausableTimer();
 console.log('hello!');
 console.log('After 5s, I will bind timeout function that show \'bye\' after 10000ms');
 var globalTime = 0;
@@ -9,28 +10,24 @@ var globalTimeId = setInterval(function () {
   if (globalTime > 20) clearInterval(globalTimeId);
 }, 1000);
 setTimeout(function () {
-  mySetTimeout(function printBye() {
+  timer.setTimeout(function printBye() {
     console.log('bye');
-    myClearInterval(timerTimeId);
+    timer.clearInterval(timerTimeId);
   }, 10000);
   var timerTime = 0;
-  var timerTimeId = mySetInterval(function () {
+  var timerTimeId = timer.setInterval(function () {
     console.log('timer time', ++timerTime);
   }, 1000);
   console.log('I bound printBye function and it print \'bye\' after 10s');
   console.log('but after 7s, the timer will be deactivated');
   setTimeout(function () {
-    deactivate();
+    timer.deactivate();
     console.log('the timer is deactivated. let me wait 6 seconds');
     setTimeout(function () {
       console.log('\'bye\' is not printed, right?');
-      activate();
+      timer.activate();
       console.log('i activated the timer. bye will show after 3s');
     }, 6000);
   }, 7000);
 }, 5000);
 </script>
-<!--
-<button onclick="deactivate()">Pause</button>
-<button onclick="activate()">Play</button>
--->
