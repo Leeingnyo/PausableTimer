@@ -7,6 +7,8 @@ var PausableTimer = function () {
     return id;
   }
 
+  var isActive = true;
+
   this.setTimeout = function (callback, delay = 0, ...args) {
     var id = setTimeout(function (...args) {
       callback(...args);
@@ -18,6 +20,9 @@ var PausableTimer = function () {
       args,
       timestamp: performance.now()
     };
+    if (!isActive) {
+      clearTimeout(id);
+    }
     return id;
   };
   this.clearTimeout = function (id) {
@@ -35,6 +40,9 @@ var PausableTimer = function () {
       args,
       timestamp: performance.now()
     };
+    if (!isActive) {
+      clearInterval(id);
+    }
     return id;
   };
   this.clearInterval = function (id) {
@@ -54,8 +62,10 @@ var PausableTimer = function () {
       interval.leftTiem = (performance.now() - interval.timestamp) % interval.interval;
       clearInterval(id);
     });
+    isActive = false;
   };
   this.activate = function () {
+    isActive = true;
     Object.keys(timeouts).forEach(id => {
       var timeout = timeouts[id];
       var { callback, delay, args } = timeout;
