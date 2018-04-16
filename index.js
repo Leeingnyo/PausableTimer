@@ -8,6 +8,9 @@ var PausableTimer = function () {
   }
 
   var isActive = true;
+  this.isActive = function () {
+    return isActive;
+  };
 
   this.setTimeout = function (callback, delay = 0, ...args) {
     var id = setTimeout(function (...args) {
