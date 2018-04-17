@@ -62,7 +62,7 @@ var PausableTimer = function () {
     });
     Object.keys(intervals).forEach(function (id) {
       var interval = intervals[id];
-      interval.leftTiem = (performance.now() - interval.timestamp) % interval.interval;
+      interval.leftTiem = interval.interval - (performance.now() - interval.timestamp) % interval.interval;
       clearInterval(id);
     });
     isActive = false;
