@@ -1,91 +1,97 @@
 var PausableTimer = function () {
-  var timeouts = {};
-  var intervals = {};
-  var map = {};
-  function traceId(id) {
-    if (map[id]) return traceId(map[id]);
-    return id;
-  }
+  // internal
+  this._isActive = true;
 
-  var isActive = true;
-  this.isActive = function () {
-    return isActive;
-  };
+  // for timeouts and intervals
+  this._timeouts = {};
+  this._intervals = {};
+  this._map = {};
+};
 
-  this.setTimeout = function (callback, delay = 0, ...args) {
-    var id = setTimeout(function (...args) {
-      callback(...args);
-      delete timeouts[id];
-    }, delay, ...args);
-    timeouts[id] = {
-      callback,
-      delay,
-      args,
-      timestamp: performance.now()
-    };
-    if (!isActive) {
-      clearTimeout(id);
-    }
-    return id;
+PausableTimer.prototype.isActive = function () {
+  return this._isActive;
+};
+
+PausableTimer.prototype.getTime = performance ? performance.now.bind(performance) : () => +new Date();
+
+PausableTimer.prototype.traceId = function (id) {
+  if (this._map[id]) return this.traceId(this._map[id]);
+  return id;
+};
+
+PausableTimer.prototype.setTimeout = function (callback, delay = 0, ...args) {
+  var id = setTimeout((...args) => {
+    callback.bind(null)(...args);
+    delete this._timeouts[id];
+  }, delay, ...args);
+  this._timeouts[id] = {
+    callback,
+    delay,
+    args,
+    timestamp: this.getTime()
   };
-  this.clearTimeout = function (id) {
-    id = traceId(id);
+  if (!this._isActive) {
     clearTimeout(id);
-    delete timeouts[id];
+  }
+  return id;
+};
+PausableTimer.prototype.clearTimeout = function (id) {
+  id = this.traceId(id);
+  clearTimeout(id);
+  delete this._timeouts[id];
+};
+PausableTimer.prototype.setInterval = function (callback, interval = 0, ...args) {
+  var id = setInterval((...args) => {
+    callback.bind(null)(...args);
+  }, interval, ...args);
+  this._intervals[id] = {
+    callback,
+    interval,
+    args,
+    timestamp: this.getTime()
   };
-  this.setInterval = function (callback, interval = 0, ...args) {
-    var id = setInterval(function () {
-      callback(...args);
-    }, interval, ...args);
-    intervals[id] = {
-      callback,
-      interval,
-      args,
-      timestamp: performance.now()
-    };
-    if (!isActive) {
-      clearInterval(id);
-    }
-    return id;
-  };
-  this.clearInterval = function (id) {
-    id = traceId(id);
+  if (!this._isActive) {
     clearInterval(id);
-    delete intervals[id];
-  };
+  }
+  return id;
+};
+PausableTimer.prototype.clearInterval = function (id) {
+  id = this.traceId(id);
+  clearInterval(id);
+  delete this._intervals[id];
+};
 
-  this.deactivate = function () {
-    Object.keys(timeouts).forEach(function (id) {
-      var timeout = timeouts[id];
-      timeout.delay -= performance.now() - timeout.timestamp;
-      clearTimeout(id);
-    });
-    Object.keys(intervals).forEach(function (id) {
-      var interval = intervals[id];
-      interval.leftTime = interval.interval - (performance.now() - interval.timestamp) % interval.interval;
-      clearInterval(id);
-    });
-    isActive = false;
-  };
-  this.activate = function () {
-    isActive = true;
-    Object.keys(timeouts).forEach(id => {
-      var timeout = timeouts[id];
-      var { callback, delay, args } = timeout;
-      var newId = this.setTimeout(callback, delay, ...args);
-      map[id] = newId;
-      delete timeouts[id];
-    });
-    Object.keys(intervals).forEach(id => {
-      var target = intervals[id];
-      var { callback, interval, args, leftTime } = target;
-      var newId = setTimeout(() => {
-        callback(...args);
-        var realNewId = this.setInterval(callback, interval, ...args);
-        map[newId] = realNewId;
-      }, leftTime);
-      map[id] = newId;
-      delete intervals[id];
-    });
-  };
+PausableTimer.prototype.deactivate = function () {
+  Object.keys(this._timeouts).forEach(id => {
+    var timeout = this._timeouts[id];
+    timeout.delay -= this.getTime() - timeout.timestamp;
+    clearTimeout(id);
+  });
+  Object.keys(this._intervals).forEach(id => {
+    var interval = this._intervals[id];
+    interval.leftTime = interval.interval - (this.getTime() - interval.timestamp) % interval.interval;
+    clearInterval(id);
+  });
+  this._isActive = false;
+};
+PausableTimer.prototype.activate = function () {
+  this._isActive = true;
+  Object.keys(this._timeouts).forEach(id => {
+    var timeout = this._timeouts[id];
+    var { callback, delay, args } = timeout;
+    var newId = this.setTimeout(callback, delay, ...args);
+    this._map[id] = newId;
+    delete this._timeouts[id];
+  });
+  Object.keys(this._intervals).forEach(id => {
+    var target = this._intervals[id];
+    var { callback, interval, args, leftTime } = target;
+    var newId = setTimeout(() => {
+      callback(...args);
+      var realNewId = this.setInterval(callback, interval, ...args);
+      this._map[newId] = realNewId;
+    }, leftTime);
+    this._map[id] = newId;
+    delete this._intervals[id];
+  });
 };
