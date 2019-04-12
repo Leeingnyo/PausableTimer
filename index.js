@@ -6,6 +6,11 @@ var PausableTimer = function () {
   this._timeouts = {};
   this._intervals = {};
   this._map = {};
+
+  // for timer
+  this._origin = this.getTime();
+  this._deactivatedTime = 0; // 시간
+  this._deactivatedTimeSet = null; // 시각
 };
 
 PausableTimer.prototype.isActive = function () {
@@ -13,6 +18,22 @@ PausableTimer.prototype.isActive = function () {
 };
 
 PausableTimer.prototype.getTime = performance ? performance.now.bind(performance) : () => +new Date();
+PausableTimer.prototype.now = function () {
+  var now = this.getTime() - this._origin - this._deactivatedTime;
+  if (this._deactivatedTimeSet) return now - (this.getTime() - this._deactivatedTimeSet);
+  return now;
+};
+PausableTimer.prototype.lifeTime = function () {
+  return this.getTime() - this._origin;
+};
+PausableTimer.prototype.reset = function () {
+  this._deactivatedTime = this.lifeTime();
+};
+PausableTimer.prototype.resetHard = function () {
+  this._origin = this.getTime();
+  this._deactivatedTime = 0;
+  this._deactivatedTimeSet = null;
+};
 
 PausableTimer.prototype.traceId = function (id) {
   if (this._map[id]) return this.traceId(this._map[id]);
@@ -73,9 +94,12 @@ PausableTimer.prototype.deactivate = function () {
     clearInterval(id);
   });
   this._isActive = false;
+  this._deactivatedTimeSet = this.getTime();
 };
 PausableTimer.prototype.activate = function () {
   this._isActive = true;
+  this._deactivatedTime += this.getTime() - this._deactivatedTimeSet;
+  this._deactivatedTimeSet = 0;
   Object.keys(this._timeouts).forEach(id => {
     var timeout = this._timeouts[id];
     var { callback, delay, args } = timeout;

@@ -6,12 +6,14 @@ console.log('hello!');
 console.log('After 5s, I will bind timeout function that show \'bye\' after 10000ms');
 var globalTime = 0;
 var globalTimeId = setInterval(function () {
-  console.log('global time', ++globalTime);
+  console.log('global time', ++globalTime, 'timer.now()', timer.now());
   if (globalTime > 20) clearInterval(globalTimeId);
 }, 1000);
 setTimeout(function () {
+  timer.reset();
   timer.setTimeout(function printBye() {
     console.log('bye');
+    console.log(timer.now());
     timer.clearInterval(timerTimeId);
   }, 10000);
   var timerTime = 0;
