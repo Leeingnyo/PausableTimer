@@ -83,6 +83,7 @@ PausableTimer.prototype.clearInterval = function (id) {
 };
 
 PausableTimer.prototype.deactivate = function () {
+  if (!this._isActive) return;
   Object.keys(this._timeouts).forEach(id => {
     var timeout = this._timeouts[id];
     timeout.delay -= this.getTime() - timeout.timestamp;
@@ -97,6 +98,7 @@ PausableTimer.prototype.deactivate = function () {
   this._deactivatedTimeSet = this.getTime();
 };
 PausableTimer.prototype.activate = function () {
+  if (this._isActive) return;
   this._isActive = true;
   this._deactivatedTime += this.getTime() - this._deactivatedTimeSet;
   this._deactivatedTimeSet = 0;
